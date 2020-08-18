@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploypostgress
+  namespace: akila1456678
+spec:
+  replicas: 1
+  selector:
+       matchLabels:
+         app: postgress
+  template:
+    metadata:
+      labels:
+        app: postgress
+    spec:
+      containers:
+        - name: postgress
+          image: postgres:9.6
+          resources:
+            limits:
+              memory: 2Gi
+              cpu: "1"
+            requests:
+              memory: 500Mi
+              cpu: 250m
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: sonar
+            - name: POSTGRES_PASSWORD
+              value: password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+      volumes:
+        - name: postgredb
+
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresssvc
+  namespace: akila1456678
+  labels:
+    app: postgress
+spec:
+  type: LoadBalancer
+  ports:
+   - port: 5432
+  selector:
+   app: postgress
