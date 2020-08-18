@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sonar
+  name: sonardeploy
+  namespace: akila1456678
+spec:
+  replicas: 1
+  selector:
+       matchLabels:
+         app: sonar
+  template:
+    metadata:
+      labels:
+        app: sonar
+    spec:
+      containers:
+        - name: sonar
+          image: sonarqube:6.7
+          args:
+          - -Dsonar.web.context=/akila/sonar
+          resources:
+            limits:
+              memory: 2Gi
+              cpu: "1"
+            requests:
+              memory: 500Mi
+              cpu: 250m
+          ports:
+          - containerPort: 9000
+            protocol: TCP
+          env:
+          - name: SONARQUBE_JDBC_USERNAME
+            value: sonar
+          - name: SONARQUBE_JDBC_URL
+            value: jdbc:postgresql://51.138.29.97:5432/sonar
+          - name: SONARQUBE_JDBC_PASSWORD
+            value: password
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarsvc
+  namespace: akila1456678
+spec:
+  ports:
+    - name: sonarport
+      port: 9000
+  type: ClusterIP
+  selector:
+    app: sonar
