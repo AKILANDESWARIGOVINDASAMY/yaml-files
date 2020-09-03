@@ -1,0 +1,77 @@
+- name: Create Azure VM
+  hosts: localhost
+  connection: local
+  tasks:
+  - name: Create resource group
+    azure_rm_resourcegroup:
+      name: AkilaRG
+      location: eastus
+  - name: Create virtual network
+    azure_rm_virtualnetwork:
+      resource_group: AkilaRG
+      name: AkilaVnet
+      address_prefixes: "10.0.0.0/16"
+  - name: Add subnet
+    azure_rm_subnet:
+      resource_group: AkilaRG
+      name: AkilaSubnet
+      address_prefix: "10.0.1.0/24"
+      virtual_network: AkilaVnet
+  - name: Create public IP address
+    azure_rm_publicipaddress:
+      resource_group: AkilaRG
+      allocation_method: Static
+      name: AkilaPublicTP
+    register: output_ip_address
+  - name: Dump public IP for VM which will be created
+    debug:
+      msg: "The public IP is {{ output_ip_address.state.ip_address }}."
+  - name: Create Network Security Group that allows SSH
+    azure_rm_securitygroup:
+      resource_group: AkilaRG
+      name: AkilaNSG
+      rules:
+        - name: SSH
+          protocol: Tcp
+          destination_port_range: 22
+          access: Allow
+          priority: 301
+          direction: Inbound
+        - name: 'allow_rdp_jenkins_selenium'
+          protocol: Tcp
+          destination_port_range:
+            - 8080
+            - 4444
+          access: Allow
+          priority: 302
+          direction: Inbound
+        - name: 'allow_web_traffic'
+          protocol: Tcp
+          destination_port_range:
+            - 80
+            - 443
+          access: Allow
+          priority: 304
+          direction: Inbound
+  - name: Create virtual network interface card
+    azure_rm_networkinterface:
+      resource_group: AkilaRG
+      name: myNetworkInterfaceCard
+      virtual_network: AkilaVnet
+      subnet: AkilaSubnet
+      public_ip_name: AkilaPublicTP
+      security_group: AkilaNSG
+  - name: Create VM
+    azure_rm_virtualmachine:
+      resource_group: AkilaRG
+      name: AkilaVM
+      vm_size: Standard_D2s_v3
+      ssh_password_enabled: true
+      admin_username: akila123
+      admin_password: "Akilandes@123"
+      network_interfaces: myNetworkInterfaceCard
+      image:
+        offer: UbuntuServer
+        publisher: Canonical
+        sku: '18.04-LTS'
+        version: latest
